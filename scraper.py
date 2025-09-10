@@ -4,12 +4,11 @@ import os
 from PIL import Image
 from io import BytesIO
 
-# Output directory
+# Output directories
 OUTPUT_DIR = "output"
 RAW_DIR = os.path.join(OUTPUT_DIR, "raw")
 PROCESSED_DIR = os.path.join(OUTPUT_DIR, "processed")
 
-# Make sure both folders exist
 os.makedirs(RAW_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
@@ -26,7 +25,7 @@ newspapers = {
 # Today's date (YYYY-MM-DD)
 today = datetime.now().strftime("%Y-%m-%d")
 
-# Target resolution for your Spectra 6 display (portrait)
+# Target resolution for Spectra 6 display (portrait)
 TARGET_SIZE = (480, 800)
 
 def resize_and_crop(img, target_size):
@@ -35,7 +34,7 @@ def resize_and_crop(img, target_size):
     target_ratio = target_w / target_h
 
     if img_ratio > target_ratio:
-        # Image is wider → squeeze horizontally (ignore aspect ratio)
+        # Image is wider → squeeze horizontally to fit
         print("📐 Image wider than target → squeezing to fit")
         return img.resize((target_w, target_h), Image.LANCZOS)
     else:
@@ -52,7 +51,6 @@ def resize_and_crop(img, target_size):
         return img.crop((0, top, new_w, bottom))
 
 for name, slug in newspapers.items():
-    # Construct the high-res image URL
     url = f"https://d2dr22b2lm4tvw.cloudfront.net/{slug}/{today}/front-page-large.jpg"
     print(f"Fetching {name}: {url}")
 
@@ -62,20 +60,20 @@ for name, slug in newspapers.items():
             # Open image from bytes
             img = Image.open(BytesIO(r.content))
 
-            # Save RAW full image
+            # Save RAW full image (JPG, original quality)
             raw_path = os.path.join(RAW_DIR, f"{name}_{today}.jpg")
-            img.save(raw_path, format="JPEG", quality=95)
+            img.save(raw_path, format="JPEG", quality=95, optimize=True)
             print(f"💾 Saved raw image → {raw_path}")
 
-            # Convert to RGB (good for color e-ink displays like Spectra 6)
+            # Convert to RGB for color e-ink
             img = img.convert("RGB")
 
-            # Resize with hybrid strategy
+            # Resize to panel resolution
             processed_img = resize_and_crop(img, TARGET_SIZE)
 
-            # Save processed version
-            proc_path = os.path.join(PROCESSED_DIR, f"{name}.jpg")
-            processed_img.save(proc_path, format="JPEG", quality=90)
+            # Save processed version as PNG (lossless, sharp)
+            proc_path = os.path.join(PROCESSED_DIR, f"{name}.png")
+            processed_img.save(proc_path, format="PNG", optimize=True)
             print(f"✅ Saved processed image → {proc_path}")
         else:
             print(f"⚠ Failed to fetch {name} (status {r.status_code})")
