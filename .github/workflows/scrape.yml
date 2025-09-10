@@ -26,10 +26,10 @@ jobs:
         run: |
           python scraper.py
 
-      - name: Commit results
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add output/
-          git commit -m "Update images" || echo "No changes"
-          git push
+      - name: Commit and push if changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: github-actions
+          author_email: actions@github.com
+          message: "Update images"
+          add: "output/*"
