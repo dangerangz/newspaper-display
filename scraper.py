@@ -46,7 +46,7 @@ for key, (url, filename) in newspapers.items():
 
         # Optional: resize/crop to e-ink resolution (e.g., 600×400)
         #img = img.convert("L")  # grayscale
-        img = img.resize((600, 400))
+        img = img.resize((400, 600))
 
         filepath = os.path.join(OUTPUT_DIR, filename)
         img.save(filepath)
