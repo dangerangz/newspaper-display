@@ -28,11 +28,11 @@ today = datetime.now().strftime("%Y-%m-%d")
 # Target resolution for Spectra 6 display (portrait)
 TARGET_SIZE = (480, 800)
 
-def autocrop_white_borders(img, tol=240, border=10):
+def autocrop_white_borders(img, tol=240, border_left=20, border_top=40, border_right=20, border_bottom=10):
     """
-    Detects and crops thick white borders, then adds a small border back.
+    Detects and crops thick white borders, then adds back custom borders.
     - tol: tolerance (0=black, 255=white). Pixels above tol are considered white.
-    - border: how many pixels of breathing space to keep.
+    - border_*: breathing space (px) for each side.
     """
     gray = img.convert("L")
     mask = gray.point(lambda x: 0 if x > tol else 255, '1')
@@ -41,11 +41,10 @@ def autocrop_white_borders(img, tol=240, border=10):
     if not bbox:
         return img  # nothing detected → return original
 
-    # Expand bbox outward for breathing space
-    left = max(bbox[0] - border, 0)
-    top = max(bbox[1] - border, 0)
-    right = min(bbox[2] + border, img.width)
-    bottom = min(bbox[3] + border, img.height)
+    left = max(bbox[0] - border_left, 0)
+    top = max(bbox[1] - border_top, 0)
+    right = min(bbox[2] + border_right, img.width)
+    bottom = min(bbox[3] + border_bottom, img.height)
 
     return img.crop((left, top, right, bottom))
 
@@ -87,8 +86,10 @@ for name, slug in newspapers.items():
             # Convert to RGB for color e-ink
             img = img.convert("RGB")
 
-            # Step 1: Auto-crop borders
-            img = autocrop_white_borders(img, tol=240, border=10)
+            # Step 1: Auto-crop borders (top border thicker)
+            img = autocrop_white_borders(img, tol=240,
+                                         border_left=20, border_top=40,
+                                         border_right=20, border_bottom=10)
 
             # Step 2: Resize to display resolution
             processed_img = resize_and_crop(img, TARGET_SIZE)
