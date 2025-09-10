@@ -4,7 +4,10 @@ on:
   schedule:
     - cron: "0 8 * * *"   # run once a day at 8 AM UTC (change as needed)
   workflow_dispatch:       # lets you run it manually from GitHub
-
+  
+permissions:
+  contents: write
+  
 jobs:
   scrape:
     runs-on: ubuntu-latest
