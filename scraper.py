@@ -28,24 +28,44 @@ today = datetime.now().strftime("%Y-%m-%d")
 # Target resolution for Spectra 6 display (portrait)
 TARGET_SIZE = (480, 800)
 
+def autocrop_white_borders(img, tol=240, border=10):
+    """
+    Detects and crops thick white borders, then adds a small border back.
+    - tol: tolerance (0=black, 255=white). Pixels above tol are considered white.
+    - border: how many pixels of breathing space to keep.
+    """
+    gray = img.convert("L")
+    mask = gray.point(lambda x: 0 if x > tol else 255, '1')
+    bbox = mask.getbbox()
+
+    if not bbox:
+        return img  # nothing detected → return original
+
+    # Expand bbox outward for breathing space
+    left = max(bbox[0] - border, 0)
+    top = max(bbox[1] - border, 0)
+    right = min(bbox[2] + border, img.width)
+    bottom = min(bbox[3] + border, img.height)
+
+    return img.crop((left, top, right, bottom))
+
 def resize_and_crop(img, target_size):
     target_w, target_h = target_size
     img_ratio = img.width / img.height
     target_ratio = target_w / target_h
 
     if img_ratio > target_ratio:
-        # Image is wider → squeeze horizontally to fit
+        # Wider → squeeze horizontally
         print("📐 Image wider than target → squeezing to fit")
         return img.resize((target_w, target_h), Image.LANCZOS)
     else:
-        # Image is taller → scale proportionally, crop from bottom
+        # Taller → scale proportionally, crop from bottom
         print("📐 Image taller than target → scaling and cropping bottom")
         scale = target_w / img.width
         new_w = target_w
         new_h = int(img.height * scale)
         img = img.resize((new_w, new_h), Image.LANCZOS)
 
-        # Crop height if needed
         top = 0
         bottom = min(new_h, target_h)
         return img.crop((0, top, new_w, bottom))
@@ -57,10 +77,9 @@ for name, slug in newspapers.items():
     try:
         r = requests.get(url, timeout=15)
         if r.status_code == 200:
-            # Open image from bytes
             img = Image.open(BytesIO(r.content))
 
-            # Save RAW full image (JPG, original quality)
+            # Save raw image (JPG)
             raw_path = os.path.join(RAW_DIR, f"{name}_{today}.jpg")
             img.save(raw_path, format="JPEG", quality=95, optimize=True)
             print(f"💾 Saved raw image → {raw_path}")
@@ -68,10 +87,13 @@ for name, slug in newspapers.items():
             # Convert to RGB for color e-ink
             img = img.convert("RGB")
 
-            # Resize to panel resolution
+            # Step 1: Auto-crop borders
+            img = autocrop_white_borders(img, tol=240, border=10)
+
+            # Step 2: Resize to display resolution
             processed_img = resize_and_crop(img, TARGET_SIZE)
 
-            # Save processed version as PNG (lossless, sharp)
+            # Save processed (lossless PNG)
             proc_path = os.path.join(PROCESSED_DIR, f"{name}.png")
             processed_img.save(proc_path, format="PNG", optimize=True)
             print(f"✅ Saved processed image → {proc_path}")
