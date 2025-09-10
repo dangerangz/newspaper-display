@@ -29,24 +29,22 @@ def resize_and_crop(img, target_size):
     img_ratio = img.width / img.height
     target_ratio = target_w / target_h
 
-    # Scale image to fill the target box
     if img_ratio > target_ratio:
-        # Image is wider → scale by height
-        scale = target_h / img.height
+        # Image is wider → squeeze horizontally (ignore aspect ratio)
+        print("📐 Image wider than target → squeezing to fit")
+        return img.resize((target_w, target_h), Image.LANCZOS)
     else:
-        # Image is taller → scale by width
+        # Image is taller → scale proportionally, crop from bottom
+        print("📐 Image taller than target → scaling and cropping bottom")
         scale = target_w / img.width
+        new_w = target_w
+        new_h = int(img.height * scale)
+        img = img.resize((new_w, new_h), Image.LANCZOS)
 
-    new_w = int(img.width * scale)
-    new_h = int(img.height * scale)
-    img = img.resize((new_w, new_h), Image.LANCZOS)
-
-    # Crop the image to fit target size
-    left = max(0, (new_w - target_w) // 2)
-    top = 0
-    right = left + target_w
-    bottom = top + target_h
-    return img.crop((left, top, right, bottom))
+        # Crop height if needed
+        top = 0
+        bottom = min(new_h, target_h)
+        return img.crop((0, top, new_w, bottom))
 
 for name, slug in newspapers.items():
     # Construct the high-res image URL
@@ -62,7 +60,7 @@ for name, slug in newspapers.items():
             # Convert to RGB (good for color e-ink displays like Spectra 6)
             img = img.convert("RGB")
 
-            # Resize with crop/letterbox to 480x800
+            # Resize with hybrid strategy
             img = resize_and_crop(img, TARGET_SIZE)
 
             # Save final image
