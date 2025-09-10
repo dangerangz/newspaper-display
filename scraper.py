@@ -6,7 +6,12 @@ from io import BytesIO
 
 # Output directory
 OUTPUT_DIR = "output"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+RAW_DIR = os.path.join(OUTPUT_DIR, "raw")
+PROCESSED_DIR = os.path.join(OUTPUT_DIR, "processed")
+
+# Make sure both folders exist
+os.makedirs(RAW_DIR, exist_ok=True)
+os.makedirs(PROCESSED_DIR, exist_ok=True)
 
 # Map of newspapers → Freedom Forum slugs
 newspapers = {
@@ -57,16 +62,21 @@ for name, slug in newspapers.items():
             # Open image from bytes
             img = Image.open(BytesIO(r.content))
 
+            # Save RAW full image
+            raw_path = os.path.join(RAW_DIR, f"{name}_{today}.jpg")
+            img.save(raw_path, format="JPEG", quality=95)
+            print(f"💾 Saved raw image → {raw_path}")
+
             # Convert to RGB (good for color e-ink displays like Spectra 6)
             img = img.convert("RGB")
 
             # Resize with hybrid strategy
-            img = resize_and_crop(img, TARGET_SIZE)
+            processed_img = resize_and_crop(img, TARGET_SIZE)
 
-            # Save final image
-            filepath = os.path.join(OUTPUT_DIR, f"{name}.jpg")
-            img.save(filepath, format="JPEG", quality=90)
-            print(f"✅ Saved {filepath}")
+            # Save processed version
+            proc_path = os.path.join(PROCESSED_DIR, f"{name}.jpg")
+            processed_img.save(proc_path, format="JPEG", quality=90)
+            print(f"✅ Saved processed image → {proc_path}")
         else:
             print(f"⚠ Failed to fetch {name} (status {r.status_code})")
 
