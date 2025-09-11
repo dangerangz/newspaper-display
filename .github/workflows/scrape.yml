@@ -2,7 +2,7 @@ name: Scrape and Publish
 
 on:
   schedule:
-    - cron: "10 10 * * *"   # run twice a day at 8 AM and 3 PM SGT (change as needed)
+    - cron: "10 10 * * *"   # run twice a day at 610 PM and 8 PM SGT (change as needed)
     - cron: "0 12 * * *"
   workflow_dispatch:       # lets you run it manually from GitHub
   
